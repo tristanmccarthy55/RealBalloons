@@ -1,0 +1,15 @@
+# Build output
+Source/bin/
+Source/obj/
+# Release zips (attach them to a GitHub release, don't commit them)
+*.zip
+# Python
+__pycache__/
+*.pyc
+# Editors / OS
+.vs/
+.vscode/
+*.user
+*.suo
+Thumbs.db
+desktop.ini

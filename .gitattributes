@@ -1,0 +1,9 @@
+# Text files stay LF (as written), on every OS. KSP and Windows editors read LF fine.
+* text=auto eol=lf
+# Binary assets: never touch.
+*.dll binary
+*.dds binary
+*.mu  binary
+*.wav binary
+*.png binary
+*.zip binary

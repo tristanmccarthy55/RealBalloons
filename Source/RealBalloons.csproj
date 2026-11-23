@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    RealBalloons plugin. Build with the .NET SDK:
+        dotnet build Source/RealBalloons.csproj -c Release -p:KSPDIR="D:/KSP_RO/Kerbal Space Program"
+    KSPDIR is the KSP install whose KSP_x64_Data/Managed DLLs it compiles against (only referenced,
+    never copied). Writes GameData/RealBalloons/Plugins/RealBalloons.dll.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>RealBalloons</AssemblyName>
+    <RootNamespace>RealBalloons</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(MSBuildThisFileDirectory)../GameData/RealBalloons/Plugins/</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <KSPDIR Condition="'$(KSPDIR)' == ''">D:/KSP_RO/Kerbal Space Program</KSPDIR>
+    <KSPManaged>$(KSPDIR)/KSP_x64_Data/Managed</KSPManaged>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <KSPRef Include="$(KSPManaged)/Assembly-CSharp.dll;$(KSPManaged)/Assembly-CSharp-firstpass.dll;$(KSPManaged)/UnityEngine*.dll" />
+    <Reference Include="@(KSPRef)" Private="false" />
+    <!-- .NET Framework 4.7.2 reference assemblies from NuGet, unless FrameworkPathOverride points at an installed set (e.g. Mono's 4.7.2-api). -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" Condition="'$(FrameworkPathOverride)' == ''" />
+  </ItemGroup>
+
+  <Target Name="CheckKSPDIR" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(KSPManaged)/Assembly-CSharp.dll')"
+           Text="KSP not found at '$(KSPDIR)'. Pass -p:KSPDIR=&quot;path to your KSP folder&quot;." />
+  </Target>
+</Project>
