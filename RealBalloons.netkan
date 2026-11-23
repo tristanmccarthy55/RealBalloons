@@ -6,7 +6,7 @@ abstract: >-
   from small research balloons to NASA's Big 60 and Venus airships.
 author: tristanmccarthy55
 license: MIT
-$kref: '#/ckan/github/YOURNAME/RealBalloons'
+$kref: '#/ckan/github/tristanmccarthy55/RealBalloons'
 $vref: '#/ckan/ksp-avc'
 tags:
   - plugin

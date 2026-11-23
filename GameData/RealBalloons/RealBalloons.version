@@ -1,7 +1,7 @@
 {
   "NAME": "RealBalloons",
-  "URL": "https://raw.githubusercontent.com/YOURNAME/RealBalloons/main/GameData/RealBalloons/RealBalloons.version",
-  "DOWNLOAD": "https://github.com/YOURNAME/RealBalloons/releases",
+  "URL": "https://raw.githubusercontent.com/tristanmccarthy55/RealBalloons/main/GameData/RealBalloons/RealBalloons.version",
+  "DOWNLOAD": "https://github.com/tristanmccarthy55/RealBalloons/releases",
   "VERSION": { "MAJOR": 1, "MINOR": 0, "PATCH": 0, "BUILD": 0 },
   "KSP_VERSION": { "MAJOR": 1, "MINOR": 12, "PATCH": 5 },
   "KSP_VERSION_MIN": { "MAJOR": 1, "MINOR": 12, "PATCH": 0 },

@@ -21,7 +21,7 @@ their own names.
 
 ## Install
 
-Download the zip from [Releases](https://github.com/YOURNAME/RealBalloons/releases) and copy its
+Download the zip from [Releases](https://github.com/tristanmccarthy55/RealBalloons/releases) and copy its
 `GameData/RealBalloons` into your KSP `GameData` folder.
 
 **Moving from the KerBalloons RP-1 pack:**
