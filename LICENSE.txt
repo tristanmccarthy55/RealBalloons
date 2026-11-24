@@ -33,10 +33,17 @@ by linuxgurugamer) and KerBalloons Reinflated. It includes:
   - GameData/RealBalloons/Parts/RealBalloon/KBTexKerbin.dds the KerBalloons balloon texture, modified
                                                             (planet picture on the cap painted out,
                                                             teal glow ring made metal grey)
-  - GameData/RealBalloons/Sounds/*.wav                      the KerBalloons inflate, deflate and burst sounds
+  - GameData/RealBalloons/Parts/RealBalloon/RealBalloons_Envelope.dds
+                                                            the KerBalloons balloon fabric, unrolled
+                                                            for the plugin's envelope mapping
+  - GameData/RealBalloons/Parts/RealBalloon/RealBalloons_Cap.dds
+                                                            the KerBalloons cap art, enlarged to fill
+                                                            its own texture
+  - GameData/RealBalloons/Sounds/*.wav                      the KerBalloons inflate, deflate (now the rip
+                                                            panel's) and burst sounds
   - Source/                                                 the plugin, which began as KerBalloons
                                                             Reinflated's ModuleKerBalloon and keeps its
-                                                            inflate / deflate / repack framework
+                                                            inflation framework
 
 The KerBalloons licence files, as shipped with KerBalloons 0.6.0.1:
 

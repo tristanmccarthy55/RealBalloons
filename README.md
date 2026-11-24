@@ -54,9 +54,39 @@ Download the zip from [Releases](https://github.com/tristanmccarthy55/RealBalloo
   balloon at float stays there. (A real zero-pressure balloon sinks at sunset and drops ballast.) Gas
   that spills above the height where the envelope is just full isn't counted as lost, so if the
   balloon later sinks below that height it lifts as before; a full load needs all its gas anyway.
+- **Gas valve** (right-click in flight, any mount; action groups: Open, Close and Toggle gas valve, Hold neutral, Vent 0.5%): a valve at the top of the
+  envelope, as zero-pressure balloons and gas airships have, for coming down. Gas let out is gone.
+  Below the height where the envelope is just full the gas lifts the same at any height, so venting
+  can't set a lower float height: a craft floats where its envelope is just full of the gas that lifts
+  it. Each setting holds until you change it. **Hold neutral** lets out the surplus, the gas beyond what
+  lifts the craft (carried up and spilled at float, so it would climb back there), and stays on: any lift
+  the craft gains later, as its fuel burns or weight is dropped, goes too, as Zeppelins valved gas as their
+  fuel burnt. It never makes the craft heavy. The craft still floats where it did, but stays at any height
+  below it's taken to. That's how to take a blimp lower: vent to neutral,
+  then fly it down on its elevators and engines, and it holds wherever it levels off. Nothing here leaks
+  or cools the gas, so only your fuel and drops change the balance; it holds a millionth of the craft's
+  weight light, so rounding can't leave it heavy. **Vent 0.5%** (an
+  action group) lets out the surplus and then gas lifting 0.5% of the craft's weight, each press: a gentle, known sink, about 0.9 m/s for a blimp near the ground (1-4 m/s for each
+  1% heavy, faster up high). **Open** lets gas out steadily, 0.1% of the fill a second, until you close it.
+  Gas let out can't come back: only dropping weight or engines stop a sink, as on a real gas balloon. The
+  valve shuts itself at 5% of the fill. The info window shows the static lift: spare (climbs back to its float),
+  neutral, or short (sinking).
+- **Rip panel** (right-click in flight, or an action group): a strip of the envelope torn open by a
+  line, as gas balloons land with (so the envelope doesn't drag the craft over the ground) and
+  scientific balloons end their flights. The gas is out in 4 s and the envelope is done: there's no
+  deflating and repacking a balloon in the field. Final, so from the menu it takes a second click within
+  5 s; the action group pulls it at once. To land: vent until it sinks, then pull the rip panel on
+  touchdown (or cut the payload away on a decoupler and bring it down on a parachute).
 - **What you see is the gas.** The envelope is drawn at the size of the gas it really holds: a small
   bubble on the pad that swells as it climbs (a blimp with ballonets is its full hull, below). A Size 0 is about 27 m across at float, Size 4 (the
   40 million cu ft) about 130 m, the Big 60 about 150 m. The envelope isn't solid, so inflating it near the ground or another craft shoves nothing.
+  Inflating takes longer the more there is to fill, though bigger balloons get bigger pipes: about 5 s
+  for a small one (a balloon deployed under a parachute on Venus is out in seconds), 8 s for 1000 m3,
+  at most 45 s. A blimp's hull takes half as long again (21 s for 5,000 m3, 26 s for 10,000 m3) and
+  comes out on a telescoping mast: a grey centre stage runs out of the base both ways and two thinner
+  stages slide out of its ends, the last with domed tips, to the hull's full length over the first 60%,
+  resting on the base's rim. Then the hull swells round it in its own colours, its fins growing out of the
+  fabric, as the mast slides back in. Its lift comes in with the gas at a steady rate throughout.
 - **Aerodynamics.** Sphere drag on the gas volume, acting where the rope is tied or at the envelope's
   centre on fixed mounts. A blimp hull is streamlined: nose-on it has an airship hull's drag (about a
   twentieth of a sphere's of the same volume when long), broadside a sphere's on its side area. Spin
@@ -66,12 +96,14 @@ Download the zip from [Releases](https://github.com/tristanmccarthy55/RealBalloo
   between load tapes about 2 m apart, so its stress goes with that pressure whatever the balloon's size
   or shape. The same pressure is a faster airspeed in thin air: standard film takes 25 m/s at sea level,
   44 m/s at 10 km and 93 m/s at 20 km, about a real blimp's top speed low down. Climbing counts. Inflate
-  under a parachute or after slowing down; the info window shows the airflow against the rating.
-- **Show Balloon Info** (right-click, VAB or flight) gives the gas fill, the most payload and its float
-  height, empty float height, the heat floor, and where this craft will float under all its balloons
-  together (any mix of sizes), with how fast it climbs after inflating. In the VAB it plans for the
-  planet picked in **Plan for**. In flight it adds the live envelope size, airspeed, drag and lift, the
-  airflow against what tears it, and the cushion's stability.
+  under a parachute or after slowing down; the info window shows the dynamic pressure against the rating.
+- **Show Balloon Info** (right-click, VAB or flight) gives the envelope's mass, the gas fill, the most
+  payload and its float height, the float height with no payload, the heat floor, and where this craft
+  will float under all its balloons together (any mix of sizes), with how fast it climbs after
+  inflating. Payload is everything but the envelopes, so the craft line shows both: "2.27 t (1.81 t
+  payload)". In the VAB it plans for the planet picked in **Plan for**. In flight it adds the envelope's
+  size, what it can lift where it is, airspeed, drag and buoyancy, the dynamic pressure against what
+  tears it, the ballonet trim, and the cushion's stability.
 
 ## Sizes (Earth, hydrogen)
 
@@ -154,25 +186,59 @@ gas can't hold it up even before the envelope fills.
   (from the start) or the Teflon fabric.
   - **Blimp length 1-4.** Above 1 the envelope lies on its side as an airship hull, longer and slimmer
     with the same volume (at 3 it's about 3.5 times as long as it is wide). Placed unrotated, the round nose
-    points forward and the tail back; rotate the part to aim it. The part sits under its centre of buoyancy. Four tail fins (top,
-    bottom, sides) sit on the tapered end; they're for looks only, with no aerodynamic forces. In the
+    points forward and the tail back; rotate the part to aim it. The part sits under its centre of buoyancy. In the
     VAB the packed cap becomes a small airship outline, so you can see which way it faces.
+    **Tail fins and controls:** the four tail fins (top, bottom, sides) are real lifting surfaces at the
+    size they're drawn, growing with the gas and stretching with the hull (on a Size 0 hull at length 3,
+    about 53 m² each). Their rear third is hinged: rudders on the top and bottom fins, elevators on the
+    sides, moving up to 20 degrees with your pitch and yaw, SAS and trim included; SAS knows how much they can
+    do. Full deflection is a real elevator's worth, about half the force of the fin turned broadside, in
+    line with FAR's control surfaces. Like KSP's own they answer the craft's control point: on a blimp,
+    have the probe core's top point along the hull (or Control From Here on a part that faces forward), or
+    pitch and yaw won't be the hull's (with the control point facing up, Q and E turn it). Everything goes
+    with the dynamic pressure, so they steer at cruise and do nothing at a hover, where a real blimp turns
+    with its engines; no charge, as early airships pulled theirs on cables. The fins keep the hull pointing
+    along its path and damp its turning (their lift raised by the hull's upwash at their roots); the hull
+    itself tends to turn broadside to the air (the Munk moment, taken at 60% of the ideal value, as
+    measured on real hulls, and less at large angles as the flow leaves its tail), and the fins as drawn
+    outweigh it, so it's stable like most blimps. The hull's own crossflow drag damps its pitch and yaw as
+    it swings, at a hover too (each length of it pushed sideways through the air; the air it carries along
+    is counted in its inertia, not as damping). Turns are
+    slow and wide, as blimps' are: full rudder on a Size 0 hull at length 3 is about 2 degrees a second at
+    9 m/s, quicker the faster you go; differential thrust helps. **Elevators** and **Rudders** limit each
+    one's authority (100% to start). They don't roll the hull: real blimps don't roll on their fins, the
+    gondola hanging under them rights them. The hull turns slowly, as a real one's mass and the air it carries make it: an
+    elevator input takes several seconds to settle, and it swings no quicker at speed than at a hover. A
+    light gondola is a weak pendulum, so it pitches and rolls more for the same controls (full elevator
+    about 16 degrees with a quarter-tonne gondola under a Size 0 hull), and climbing or sinking tips the
+    hull towards its path like a weathervane (Hold level trims that out); a heavier gondola holds it level.
     **Ballonets** (on by default): like a real blimp, air bags inside the hull keep it full at any height,
     so it's drawn, dragged and sways at its full size from the ground up. The ballonet air weighs what it
     displaces, so lift is the gas's, the same law as the balloon: constant as it climbs until the gas
     fills the hull (its pressure height: the full-load float height in the Floats readout), then the
     surplus vents. **Envelope volume** sizes the hull, and so sets the pressure height: at full gas,
     about sea level at 2%, 14 km at 10%, 28 km at 100%. A hull sized for high altitude is huge and draggy
-    low down, as it would be. Off, the blimp launches flaccid and takes its shape as the gas expands, as
+    low down, as it would be. The gas lies along the top of the hull over the ballonet air, so the lift
+    acts at its centre: low down, where it's a thin layer, that hangs the gondola much more firmly (the
+    bottom-heaviness real blimps fly with), easing to the hull's centre at the pressure height, and in
+    towards the axis as the hull pitches (curtains inside keep the gas from running to the high end). Off, the
+    blimp launches flaccid and takes its shape as the gas expands, as
     stratospheric airships such as HiSentinel do.
     **Hull preview** (VAB, with ballonets): shows the hull inflated, as it will fly: size, shape, fins,
     colours and flag. It's only a picture: it isn't saved, has no collider, and isn't counted in the craft's
     size for launch-site limits. The CoM marker doesn't move with it: the envelope's mass is counted at the
     part, in the VAB and in flight.
-    **Ballonet trim:** like a real blimp moving air between its fore and aft ballonets, the lift point
-    slides along the hull to sit over the craft's centre of mass, up to 15% of the hull's length either
-    way. A gondola that's a little off-centre fore or aft then hangs level. Sideways offsets aren't
-    trimmed, as on a real blimp. The info window shows the trim, and warns when it's at its limit.
+    **Ballonet trim:** like a real blimp blowing air between its fore and aft ballonets, the trim turns
+    the hull nose up or down: hugely low down, where the ballonets hold tonnes of air, and little at the
+    pressure height, where the gas fills the hull (up to 40% of the ballonet air moved half the hull's
+    length, plus the lift's turn over 15% of the hull's length at any height), by its lever across the
+    vertical: all of it level, none standing on end. Once the hull is fully inflated (each inflation) it
+    balances the craft's centre of mass under the hull. **Ballonet trim** (VAB or flight): **Hold level**
+    then slowly trims the hull level, so dropping tanks, or the fins' drag tipping the hull as it climbs,
+    are trimmed out; it waits while you steer, so it doesn't undo your elevators. **Hold** keeps it where
+    it is. **Off** never trims: the ballonets just keep the hull full, and it pitches wherever its weight
+    puts it (the gas along the top of the hull still makes it bottom-heavy). The info window shows the
+    trim, and warns when it's at its limit.
   - **Cushion.** For a payload sitting on top of the envelope, like a cloud city. A creative liberty: a
     zero-pressure envelope would fold around a load on top, and real cloud-city designs use superpressure
     or rigid aerostats. It flies the same here as a superpressure one would (no leaks, no day and night).
@@ -209,11 +275,14 @@ settings keep their colour. Without TU the envelope is natural film.
 (and its symmetry twins), whatever the mission flag is; **Use mission flag on envelope** puts it back. The flag
 shows once the envelope inflates.
 
-The patterns are masks over the KerBalloons fabric texture, made by `Source/Tools/make_masks.py` (Python
-with numpy and Pillow); its header explains the mapping, and new patterns are a few lines there plus a
-`KSP_TEXTURE_SET` in `RealBalloon.cfg`. The model maps the texture straight down the envelope, which left
-its steep middle third almost no texels, so the plugin respaces the envelope's UVs at load to run evenly
-from each end to the widest part: the band keeps sharp edges, even on a long blimp.
+The patterns are masks made by `Source/Tools/make_masks.py` (Python with numpy and Pillow); its header
+explains the mapping, and new patterns are a few lines there plus a `KSP_TEXTURE_SET` in `RealBalloon.cfg`.
+The model maps the fabric texture straight down the envelope, a disc, where band edges are circles that cut
+across the texels and showed as teeth. So the plugin unrolls the envelope at load: its texture runs once round
+it and from end to end, evenly along the envelope, with its own copy of the KerBalloons fabric unrolled the
+same way. Band edges run along texel rows and gore seams along columns, so they stay straight at any distance,
+even on a long blimp. The packed cap gets a texture of its own too, so its miniature of the pattern stays sharp
+up close.
 
 ## Tech (RP-1)
 
@@ -233,8 +302,9 @@ from each end to the widest part: the band keeps sharp edges, even on a long bli
 
 ## What changed from KerBalloons
 
-Kept: the balloon model, texture and sounds, the inflate / deflate / repack actions, the flag on the
-envelope, and the B9PartSwitch size switching.
+Kept: the balloon model, texture and sounds, the inflate action, the flag on the envelope, and the
+B9PartSwitch size switching. Dropped: deflating and repacking in flight (no real balloon does it; a rip
+panel ends the flight instead).
 
 New: zero-pressure physics and float heights, true-to-gas envelope size, gas from tanks, heat and
 tear failure, envelope aerodynamics, Sizes 4-7, envelope materials, RP-1 tech placement, the fixed,
@@ -261,7 +331,7 @@ never copied) and writes `GameData/RealBalloons/Plugins/RealBalloons.dll`.
 
 RealBalloons is by **tristanmccarthy55** (GitHub). It's a heavily rewritten fork of **KerBalloons**,
 originally by **JoePatrick1** and maintained by **linuxgurugamer**, and still uses KerBalloons' balloon
-model, base textures, sounds and inflation framework (inflate, deflate and repack).
+model, base textures, sounds and inflation framework.
 
 - **JoePatrick1**: the original KerBalloons, including the model, texture and sounds.
 - **linuxgurugamer**: maintains KerBalloons.

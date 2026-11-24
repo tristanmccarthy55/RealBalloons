@@ -2,7 +2,7 @@
 // Copyright (c) 2026 tristanmccarthy55. MIT licence, see LICENSE.txt.
 // A rewritten derivative of KerBalloons (originally by JoePatrick1, maintained by linuxgurugamer;
 // KerBalloons Reinflated (c) 2018 Fengist): this module began as its ModuleKerBalloon and keeps its
-// inflate / deflate / repack framework. The balloon model, texture and sounds are KerBalloons' (MIT).
+// inflation framework. The balloon model, texture and sounds are KerBalloons' (MIT).
 
 using System.Collections.Generic;
 using System.Linq;
@@ -57,8 +57,16 @@ namespace RealBalloons
         // No climb limit: it climbs at whatever pace its spare lift and the envelope's drag give (a light
         // load on a full fill, tens of m/s; less gas, slower, as real crews do it). Too fast tears it
         // (tearPressure): the VAB's "Climb at launch" says how fast it leaves the ground and what it takes.
-        [KSPField] public float inflateTime = 4f;      // s
-        [KSPField] public float deflateTime = 2f;      // s
+        // Inflating takes longer the bigger the gas (or, with ballonets, the hull) being filled, but the pipes grow
+        // with it: inflateRate seconds times the cube root of the volume in thousands of m3 (1000 m3 in 8 s), at
+        // least inflateTime and at most inflateTimeMax (so a balloon dropped under a parachute on Venus is out in
+        // seconds). A blimp's hull, which runs out as a rod and then swells, takes inflateHullRate (a 10 000 m3
+        // hull in 26 s).
+        [KSPField] public float inflateTime = 5f;      // s, the least
+        [KSPField] public float inflateTimeMax = 45f;  // s
+        [KSPField] public float inflateRate = 8f;      // s per cube root of the volume in units of 1000 m3
+        [KSPField] public float inflateHullRate = 12f; // s, the same for a blimp's hull
+        [KSPField] public float ripTime = 4f;          // s: the rip panel lets the gas out (balloonState Deflating)
 
         // ---- State ----
         public const string Packed = "Packed", Inflating = "Inflating", Inflated = "Inflated", Deflating = "Deflating", Spent = "Spent";
@@ -157,11 +165,13 @@ namespace RealBalloons
                 Debug.LogError("[RealBalloons] " + part.partInfo?.name + ": model transforms not found, balloon disabled");
                 return;
             }
-            EvenEnvelopeUVs();      // normally done at load already (OnLoad); this only checks
+            UnrollEnvelope();       // normally done at load already (OnLoad); this only checks
             ApplyEnvelopeFlag();    // the flag picked for the envelope, if any (again next frame, after FlagDecal starts)
             flagPending = true;
             if (HighLogic.LoadedSceneIsEditor) GameEvents.onMissionFlagSelect.Add(OnMissionFlag);
 
+            UpdateFinFields();
+            NameVentAction();
             if (HighLogic.LoadedSceneIsEditor)
             {
                 SetUpPlanBodies();
@@ -184,6 +194,15 @@ namespace RealBalloons
             if (balloonState != Packed && balloonState != Inflating && balloonState != Inflated && balloonState != Deflating && balloonState != Spent)
                 balloonState = Packed;
             ShowState();
+        }
+
+        float InflateSeconds()
+        {
+            double v = 0, pk = vessel != null ? FlightGlobals.getStaticPressure(part.transform.position) : 0;
+            if (BallonetsFull) v = RealBalloonPhysics.EnvelopeVolume(this);
+            else if (pk > 0) v = RealBalloonPhysics.GasVolume(this, pk, RealBalloonPhysics.TemperatureHere(this), 1.0);
+            float t = (Hull ? inflateHullRate : inflateRate) * (float)System.Math.Pow(System.Math.Max(0, v) / 1000.0, 1.0 / 3.0);
+            return Mathf.Clamp(t, Mathf.Max(0.1f, inflateTime), Mathf.Max(inflateTime, inflateTimeMax));
         }
 
         GameObject FindChild(string name)
@@ -211,8 +230,8 @@ namespace RealBalloons
             }
             if (!out_) envelopeRadius = 0;
             Events["InflateBalloon"].active = packed;
-            Events["DeflateBalloon"].active = balloonState == Inflating || balloonState == Inflated;
-            Events["RepackBalloon"].active = balloonState == Spent;
+            Events["RipPanel"].active = balloonState == Inflating || balloonState == Inflated;
+            UpdateValveField();
         }
 
         // ---- Flight ----
@@ -235,20 +254,22 @@ namespace RealBalloons
                 keelProgress = 0f;
                 keelShown = false;
             }
-            if (!Lifting) return;
+            if (!Lifting) { finsAero = false; return; }
 
             float dt = TimeWarp.fixedDeltaTime;
+            if (ripArmedUntil > 0f && Time.unscaledTime > ripArmedUntil) DisarmRip();
             if (balloonState == Inflating)
             {
-                inflation = Mathf.Min(1f, inflation + dt / Mathf.Max(0.1f, inflateTime));
+                inflation = Mathf.Min(1f, inflation + dt / InflateSeconds());
                 if (inflation >= 1f) { balloonState = Inflated; ShowState(); }
             }
             else if (balloonState == Deflating)
             {
-                inflation -= dt / Mathf.Max(0.1f, deflateTime);
+                inflation -= dt / Mathf.Max(0.1f, ripTime);
                 if (inflation <= 0f) { inflation = 0f; Spend(); return; }
             }
             else inflation = 1f;
+            UpdateValve(dt);
 
             float pressure = (float)FlightGlobals.getStaticPressure(part.transform.position);
             PlaceEnvelope();
@@ -346,37 +367,58 @@ namespace RealBalloons
             {
                 part.Effect("inflate");
                 inflation = 0f;
+                trimSet = false;            // the blimp's trim balances the craft afresh once it's full
+                trimState = 0f;
                 balloonState = Inflating;
                 ShowState();
             }
         }
 
-        [KSPEvent(guiActive = true, guiActiveEditor = false, guiName = "Deflate Balloon", active = false)]
-        public void DeflateBalloon()
+        // The rip panel: a strip of the envelope torn open by a line, as gas balloons land with (so the envelope
+        // doesn't drag the craft over the ground) and scientific balloons end their flights. Final: the gas is
+        // out in ripTime seconds and the envelope is done, no deflating and repacking it in the field. From
+        // the menu it takes a second click within 5 s; the action group pulls it at once.
+        const string RipName = "Pull rip panel";
+        float ripArmedUntil;
+
+        [KSPEvent(guiActive = true, guiActiveEditor = false, guiName = RipName, active = false)]
+        public void RipPanel()
         {
             if (balloonState != Inflating && balloonState != Inflated) return;
+            if (ripArmedUntil <= 0f || Time.unscaledTime > ripArmedUntil)
+            {
+                ripArmedUntil = Time.unscaledTime + 5f;
+                Events["RipPanel"].guiName = RipName + ": click again";
+                ScreenMessages.PostScreenMessage("Rip panel: click again within 5 s to let all the gas out (final)", 5, ScreenMessageStyle.UPPER_CENTER);
+                return;
+            }
+            Rip();
+        }
+
+        void Rip()
+        {
+            if (balloonState != Inflating && balloonState != Inflated) return;
+            DisarmRip();
             part.Effect("deflate");
             balloonState = Deflating;
+            SetValve(ValveClosed);
+            if (vessel == FlightGlobals.ActiveVessel)
+                ScreenMessages.PostScreenMessage("Rip panel pulled: the gas is pouring out", 4, ScreenMessageStyle.UPPER_CENTER);
             ShowState();
         }
 
-        [KSPEvent(guiActive = false, guiActiveEditor = false, guiActiveUnfocused = true, unfocusedRange = 4, externalToEVAOnly = true,
-                  guiName = "Repack Balloon", active = false)]
-        public void RepackBalloon()
+        void DisarmRip()
         {
-            if (balloonState != Spent) return;
-            balloonState = Packed;
-            inflation = 0f;
-            gasMass = 0;
-            gasMoles = 0;
-            ShowState();
+            ripArmedUntil = 0f;
+            BaseEvent e = Events["RipPanel"];
+            if (e != null && e.guiName != RipName) e.guiName = RipName;
         }
 
         [KSPAction("Inflate Balloon")]
         public void InflateAction(KSPActionParam param) { InflateBalloon(); }
 
-        [KSPAction("Deflate Balloon")]
-        public void DeflateAction(KSPActionParam param) { DeflateBalloon(); }
+        [KSPAction(RipName)]
+        public void RipAction(KSPActionParam param) { Rip(); }
 
         // ---- Lifting gas ----
         // Each size holds a fixed amount of gas: the same number of moles (and resource units) of hydrogen

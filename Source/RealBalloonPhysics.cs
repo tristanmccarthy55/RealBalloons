@@ -69,6 +69,14 @@ namespace RealBalloons
             return b.gasMoles > 0 ? b.gasMoles : FillMoles(b);
         }
 
+        // What a mole of this balloon's gas lifts (t) on body, wherever the envelope isn't full: the air it
+        // displaces less its own weight, the same at any height.
+        public static double LiftPerMoleTonnes(ModuleRealBalloon b, CelestialBody body)
+        {
+            if (body == null) return 0;
+            return System.Math.Max(0, (body.atmosphereMolarMass - GasKgPerMol(b)) / 1000.0);
+        }
+
         // The gross load the balloon is built for (t): what its fill lifts in the air it's made for.
         public static double RatedLoadTonnes(ModuleRealBalloon b)
         {

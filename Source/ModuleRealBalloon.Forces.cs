@@ -108,6 +108,7 @@ namespace RealBalloons
             swayScale = rigidMount ? SwayScale(lift, progress, liftAt) : 1f;
             part.AddForceAtPosition(vessel.upAxis * lift, Scaled(liftAt));
             if (rigidMount) ApplyMassCorrection();
+            ApplyBallonetTrim(lift, pressure, progress);
             ApplyEnvelopeAero(lift, pressure, progress);
         }
 
@@ -177,10 +178,12 @@ namespace RealBalloons
             double g = FlightGlobals.getGeeForceAtPosition(com).magnitude;
             double k = liftKN * Vector3.Dot(liftAt - com, up) + BalloonMass * g * Vector3.Dot(pc - pe, up);
             if (keel) k += CounterweightMass * g * Vector3.Dot(pc - end, up);
-            if (k * n > 0)
+            // the hull's fins hold its pitch too, stiffly at speed: counted, so it doesn't swing quicker then
+            double kAll = k + (Hull && finsAero ? aeroPitchStiffness : 0);
+            if (kAll * n > 0)
             {
                 double w = 2.0 * System.Math.PI / swayPeriodCap;
-                f = System.Math.Max(f, iv * w * w / (k * n));
+                f = System.Math.Max(f, iv * w * w / (kAll * n));
             }
             f = System.Math.Min(1.0, System.Math.Max(0.0, f));
             swayStiffness = f * k;
@@ -220,6 +223,7 @@ namespace RealBalloons
             envelopeAirspeed = 0;
             envelopeQ = 0;
             envelopeLiftKN = liftKN;
+            finsAero = false;
             if (liftKN <= 0 || vessel == null || part.rb == null || vessel.mainBody == null) return;
             double rho = part.atmDensity;
             if (rho <= 0 && pressure > 0)
@@ -272,8 +276,9 @@ namespace RealBalloons
                 double q = 0.5 * rho * speed * speed;                      // Pa
                 if (q > TearPressure)
                 {
-                    ScreenMessages.PostScreenMessage("Balloon torn by " + speed.ToString("F0") + " m/s airflow (this envelope takes " +
-                        System.Math.Sqrt(2 * TearPressure / rho).ToString("F0") + " m/s here)", 6, ScreenMessageStyle.UPPER_CENTER);
+                    ScreenMessages.PostScreenMessage("Balloon torn at " + speed.ToString("F0") + " m/s: dynamic pressure " + q.ToString("F0") + "/" +
+                        TearPressure.ToString("F0") + " Pa (tears at " + System.Math.Sqrt(2 * TearPressure / rho).ToString("F0") + " m/s here)",
+                        6, ScreenMessageStyle.UPPER_CENTER);
                     Burst();
                     return;
                 }
@@ -311,6 +316,8 @@ namespace RealBalloons
                 Vector3 torque = -(float)System.Math.Min(cRock, cMax) * wPerp - (float)System.Math.Min(cSpin, cMax) * wPar;
                 if (torque.sqrMagnitude > 0) part.AddTorque(torque);
             }
+
+            if (Hull) ApplyHullAero(rho, volume, pressure, progress);
         }
 
         // Keel geometry (world): from the envelope's far end, straight on along the part's axis (away

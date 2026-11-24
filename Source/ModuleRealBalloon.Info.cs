@@ -48,6 +48,24 @@ namespace RealBalloons
         {
             Unlock();
             GameEvents.onMissionFlagSelect.Remove(OnMissionFlag);
+            DestroyRod();
+        }
+
+        // The inflated envelope's size in flight: a blimp hull's length and width, a balloon's diameter
+        // (of a sphere of its gas). Nothing in the VAB, where it's still packed.
+        string EnvelopeSizeText(bool flight)
+        {
+            if (!flight || !Lifting || balloonObject == null || !balloonObject.activeInHierarchy) return "";
+            if (Hull)
+            {
+                if (profileR == null) BuildProfile();
+                if (ringZ == null || ringZ.Length < 2) return "";
+                Transform bt = balloonObject.transform;
+                float length = (ringZ[ringZ.Length - 1] - ringZ[0]) * bt.TransformVector(Vector3.forward).magnitude;
+                float width = 2f * ringRMax * bt.TransformVector(Vector3.right).magnitude;
+                return ", " + length.ToString("F0") + " m long, " + width.ToString("F0") + " m wide";
+            }
+            return envelopeRadius > 0 ? ", " + (2 * envelopeRadius).ToString("F0") + " m across" : "";
         }
 
         Vector2 infoPos;
@@ -57,7 +75,7 @@ namespace RealBalloons
             // Planning: on the current planet in flight, or the one chosen in the VAB ("Plan for").
             bool flight = HighLogic.LoadedSceneIsFlight && vessel != null && vessel.mainBody != null;
             CelestialBody pb = flight ? vessel.mainBody : PlanBody();
-            moreInfoText = "Balloon: " + BalloonMass.ToString("0.###") + " t";
+            moreInfoText = "Envelope: " + Tonnes(BalloonMass) + EnvelopeSizeText(flight);
             if (Cushion && CounterweightMass > 0)
                 moreInfoText += "\nKeel weight: " + CounterweightMass.ToString("0.###") + " t, " +
                     keelLength.ToString("F0") + " radii down";
@@ -83,16 +101,16 @@ namespace RealBalloons
                     double heavyAlt, heavyCeil;
                     RealBalloonPhysics.PredictFloat(this, pb, liftOff * 0.999, out heavyAlt, out heavyCeil);
                     double atCeil = RealBalloonPhysics.CapacityTonnes(this, pb, minPressure, pb.GetTemperature(ceil));
-                    moreInfoText += "\n" + pb.bodyName + ":";
-                    moreInfoText += "\n  max payload " + System.Math.Max(0, liftOff - BalloonMass).ToString("F2") + " t, floats ~" +
+                    moreInfoText += "\nOn " + pb.bodyName + ":";
+                    moreInfoText += "\n  max payload " + System.Math.Max(0, liftOff - BalloonMass).ToString("F2") + " t: floats ~" +
                         (heavyAlt / 1000).ToString("F1") + " km";
                     double emptyAlt, emptyCeil;
                     int se = RealBalloonPhysics.PredictFloat(this, pb, BalloonMass, out emptyAlt, out emptyCeil);
                     if (atCeil > BalloonMass)
-                        moreInfoText += "\n  under " + (atCeil - BalloonMass).ToString("F2") + " t: pops above " +
+                        moreInfoText += "\n  under " + (atCeil - BalloonMass).ToString("F2") + " t payload: pops above " +
                             (ceil / 1000).ToString("F1") + " km";
                     else if (se == 0)
-                        moreInfoText += "\n  empty: floats ~" + (emptyAlt / 1000).ToString("F1") + " km";
+                        moreInfoText += "\n  no payload: floats ~" + (emptyAlt / 1000).ToString("F1") + " km";
                     if (bottom > 0 && !AcidProof && RealBalloonPhysics.AcidCloudTop(pb) > 0 &&
                         (acidMaxTemperature <= 0 || pb.GetTemperature(bottom) <= acidMaxTemperature + 0.5) && pb.GetTemperature(bottom) < maxAirTemperature - 0.5)
                         moreInfoText += "\n  fails below " + (bottom / 1000).ToString("F1") + " km (sulfuric acid clouds" +
@@ -109,7 +127,10 @@ namespace RealBalloons
                     {
                         double fa, fc;
                         int st = RealBalloonPhysics.PredictFloat(cluster, pb, craftMass, out fa, out fc);
-                        string who = "\nThis craft (" + craftMass.ToString("F2") + " t" + (cluster.Count > 1 ? ", " + cluster.Count + " balloons" : "") + "): ";
+                        // payload: everything but the envelopes, the same as "max payload" above
+                        double envelopes = cluster.Sum(b => (double)b.BalloonMass);
+                        string who = "\nThis craft" + (cluster.Count > 1 ? " (" + cluster.Count + " balloons)" : "") + ": " +
+                            craftMass.ToString("F2") + " t (" + System.Math.Max(0, craftMass - envelopes).ToString("F2") + " t payload): ";
                         moreInfoText += st == 0 ? who + "floats ~" + (fa / 1000).ToString("F1") + " km"
                                       : st == 1 ? who + "too heavy"
                                       : st == 2 ? who + "too light, pops above " + (fc / 1000).ToString("F1") + " km"
@@ -129,8 +150,8 @@ namespace RealBalloons
                 float here = (float)FlightGlobals.getStaticPressure(part.transform.position);
                 float g = (float)FlightGlobals.getGeeForceAtPosition(part.transform.position).magnitude;
                 if (here > 0 && g > 0)
-                    moreInfoText += "\nHere: holds " +
-                        Mathf.Max(0f, RealBalloonPhysics.LiftKN(this, here) / g - BalloonMass).ToString("F3") + " t payload";
+                    moreInfoText += "\nCan lift here: " +
+                        Mathf.Max(0f, RealBalloonPhysics.LiftKN(this, here) / g - BalloonMass).ToString("F2") + " t payload";
                 double gasT, gasU, gasN, gasShare;
                 PartResourceDefinition gasDef;
                 if (here > 0 && balloonState == Packed && GasNeeded(out gasT, out gasU, out gasN, out gasShare, out gasDef))
@@ -141,11 +162,12 @@ namespace RealBalloons
                     if (!double.IsInfinity(gasT) && gasShare < 0.995)
                         moreInfoText += "\nThe envelope holds " + (gasShare * 100).ToString("F0") + "% of the fill here: inflate lower to put it all in";
                 }
-                if (Lifting && gasMoles > 0)
+                if (Lifting && gasMoles > 0)         // only once some is lost or vented: otherwise it's the fill above
                 {
                     double fill = RealBalloonPhysics.FillMoles(this);
-                    moreInfoText += "\nGas in: " + (gasMoles * mGasInfo / 1e6).ToString("F2") + " t" +
-                        (fill > 0 && gasMoles < fill * 0.995 ? " (" + (gasMoles / fill * 100).ToString("F0") + "% of the fill)" : "");
+                    if (fill > 0 && gasMoles < fill * 0.995)
+                        moreInfoText += "\nGas left: " + (gasMoles * mGasInfo / 1e6).ToString("F2") + " t (" +
+                            (gasMoles / fill * 100).ToString("F0") + "% of the fill)";
                 }
                 if (Cushion && Lifting)
                 {
@@ -157,16 +179,20 @@ namespace RealBalloons
                     if (CounterweightMass > 0)
                         moreInfoText += "\n  tilted " + cushionTilt.ToString("F0") + " degrees: its keel tears it past " + keelTearAngle.ToString("F0");
                 }
-                if (Hull && Lifting && trimLimit > 0)
-                    moreInfoText += "\nBallonet trim: " + System.Math.Abs(trimShift).ToString("F1") + " m " + (trimShift >= 0 ? "forward" : "aft") +
-                        " of " + trimLimit.ToString("F1") + " m" + (System.Math.Abs(trimShift) >= trimLimit - 0.01 ? " (at its limit: move weight)" : "");
+                moreInfoText += ValveInfo();
+                if (Hull && Lifting && trimMax > 0)
+                    moreInfoText += "\nBallonet trim: " + (100 * System.Math.Abs(trimMoment) / trimMax).ToString("F0") + "% nose " + (trimMoment >= 0 ? "up" : "down") +
+                        " (max " + trimMax.ToString("F0") + " kN m), " + (trimMode == TrimLevel ? "holding level" : "held") +
+                        (System.Math.Abs(trimMoment) >= trimMax * 0.99 ? ": at its limit, move weight" : "");
+                else if (Hull && Lifting && flight && trimMode == TrimOff)
+                    moreInfoText += "\nBallonet trim: off";
                 if (envelopeRadius > 0)
                 {
-                    moreInfoText += "\nEnvelope: " + (2 * envelopeRadius).ToString("F0") + " m, " + envelopeAirspeed.ToString("F1") + " m/s, drag " +
+                    moreInfoText += "\nAirspeed " + envelopeAirspeed.ToString("F1") + " m/s: drag " +
                         (envelopeDragKN < 1 ? (envelopeDragKN * 1000).ToString("F0") + " N" : envelopeDragKN.ToString("F2") + " kN") +
-                        ", lift " + envelopeLiftKN.ToString("F2") + " kN";
+                        ", buoyancy " + envelopeLiftKN.ToString("F2") + " kN";
                     if (envelopeRho > 0)
-                        moreInfoText += "\nAirflow: " + envelopeQ.ToString("F0") + " of " + TearPressure.ToString("F0") + " Pa that tears it (" +
+                        moreInfoText += "\nDynamic pressure: " + envelopeQ.ToString("F0") + "/" + TearPressure.ToString("F0") + " Pa (tears at " +
                             System.Math.Sqrt(2 * TearPressure / envelopeRho).ToString("F0") + " m/s here)";
                 }
             }
